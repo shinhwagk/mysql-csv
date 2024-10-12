@@ -1,4 +1,4 @@
 ```sh
-pip install mysql-connector-python pandas sqlalchemy
+pip install -r requirements.txt
 
 ```
