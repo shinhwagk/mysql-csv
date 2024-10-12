@@ -1,8 +1,10 @@
 import argparse
+import os
+import sys
 from typing import Optional
 
+import mysql.connector
 import pandas as pd
-from sqlalchemy import create_engine
 
 
 class Args:
@@ -26,17 +28,31 @@ parser.add_argument("--csv-file", help="Path to save the output CSV file")
 
 args: Args = parser.parse_args()
 
-try:
-    database_str = f"/{args.database}" if args.database else ""
-    engine = create_engine(f"mysql+mysqlconnector://{args.user}:{args.password}@{args.host}:{args.port}{database_str}")
+print(args)
 
-    with open(args.query_file, "r") as file:
-        query = file.read()
+csv_file = args.csv_file or f"{args.query_file}.csv"
 
-    csv_file = args.csv_file or f"{args.query_file}.csv"
-    pd.read_sql(query, con=engine).to_csv(csv_file, index=False)
 
-    print(f"Query {args.query_file} results saved to {csv_file}")
-except Exception as e:
-    print(f"Error while connecting to MySQL: {e}")
-    exit(1)
+if os.path.exists(csv_file):
+    print(f"CSV file '{csv_file}' already exists.")
+    sys.exit(0)
+
+
+with open(args.query_file, "r") as file:
+    query = file.read().strip()
+
+with mysql.connector.connect(host=args.host, port=args.port, user=args.user, password=args.password, database=args.database) as con:
+    with con.cursor(buffered=False, dictionary=True) as cur:
+        cur.execute(query)
+
+        while True:
+            rows = cur.fetchmany(1000)
+
+            if not rows:
+                break
+
+            pd.DataFrame(rows).to_csv(csv_file, index=False, mode="a")
+
+            print(f"Exported {len(rows)} rows...")
+
+print(f"Query '{args.query_file}' results saved to '{csv_file}'")
