@@ -41,18 +41,19 @@ if os.path.exists(csv_file):
 with open(args.query_file, "r") as file:
     query = file.read().strip()
 
-with mysql.connector.connect(host=args.host, port=args.port, user=args.user, password=args.password, database=args.database) as con:
+rows_total = 0
+with mysql.connector.connect(host=args.host, port=args.port, user=args.user, password=args.password, database=args.database, compress=True) as con:
     with con.cursor(buffered=False, dictionary=True) as cur:
         cur.execute(query)
 
         while True:
-            rows = cur.fetchmany(1000)
+            rows = cur.fetchmany(10000)
 
             if not rows:
                 break
 
             pd.DataFrame(rows).to_csv(csv_file, index=False, mode="a")
-
-            print(f"Exported {len(rows)} rows...")
+            rows_total += len(rows)
+            print(f"Exported {len(rows)}/{rows_total} rows...")
 
 print(f"Query '{args.query_file}' results saved to '{csv_file}'")
