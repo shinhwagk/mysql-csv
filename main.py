@@ -15,6 +15,7 @@ class Args:
     database: Optional[str]
     query_file: str
     csv_file: Optional[str]
+    fetch_size: int
 
 
 parser = argparse.ArgumentParser(description="Export MySQL query results to CSV file.")
@@ -25,6 +26,7 @@ parser.add_argument("--password", required=True, help="MySQL password")
 parser.add_argument("--database", help="MySQL database name")
 parser.add_argument("--query-file", required=True, help="Path to the SQL query file")
 parser.add_argument("--csv-file", help="Path to save the output CSV file")
+parser.add_argument("--fetch-size", type=int, default=10000, help="Path to save the output CSV file")
 
 args: Args = parser.parse_args()
 
@@ -47,7 +49,7 @@ with mysql.connector.connect(host=args.host, port=args.port, user=args.user, pas
         cur.execute(query)
 
         while True:
-            rows = cur.fetchmany(10000)
+            rows = cur.fetchmany(args.fetch_size)
 
             if not rows:
                 break
